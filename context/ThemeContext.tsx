@@ -81,7 +81,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     await AsyncStorage.setItem('uiScale', scale.toString());
   };
 
-  const activeColorScheme = themeMode === 'system' ? deviceColorScheme : themeMode;
+  const activeColorScheme = themeMode === 'system' ? (deviceColorScheme === 'dark' ? 'dark' : 'light') : themeMode;
 
   if (!isLoaded) return null;
 
