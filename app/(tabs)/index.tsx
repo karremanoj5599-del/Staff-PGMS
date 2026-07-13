@@ -7,7 +7,16 @@ import { useAuth } from '../../context/AuthContext';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
+import { Platform } from 'react-native';
+let host = '127.0.0.1';
+let API_URL = process.env.EXPO_PUBLIC_API_URL;
+if (!API_URL) {
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    API_URL = 'https://pgms-nu.vercel.app/api/staff';
+  } else {
+    API_URL = 'http://127.0.0.1:5000/api/staff';
+  }
+}
 
 type Ticket = {
   id: number;
