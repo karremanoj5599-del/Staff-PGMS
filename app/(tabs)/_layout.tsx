@@ -84,12 +84,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="two"
-        options={{
-          href: null, // Hide the default 'two' tab
-        }}
-      />
+
     </Tabs>
   );
 }
