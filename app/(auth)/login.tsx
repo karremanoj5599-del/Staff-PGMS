@@ -8,7 +8,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { Platform } from 'react-native';
 let host = '127.0.0.1';
 let API_URL = process.env.EXPO_PUBLIC_API_URL;
-if (!API_URL) {
+if (!API_URL || API_URL.includes('localhost') || API_URL.includes('127.0.0.1')) {
   if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
     API_URL = 'https://pgms-nu.vercel.app/api/staff';
   } else {
