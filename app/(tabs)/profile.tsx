@@ -1,4 +1,4 @@
-import { StyleSheet, Switch, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
+import { StyleSheet, Switch, ActivityIndicator, Alert, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { useState, useEffect } from 'react';
 
 import { Text, View } from '@/components/Themed';
@@ -22,6 +22,10 @@ export default function ProfileScreen() {
   const { colors: themeColors, fontFamily, scaleFont } = useTheme();
   
   const [showThemeModal, setShowThemeModal] = useState(false);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [oldPin, setOldPin] = useState('');
+  const [newPin, setNewPin] = useState('');
+  const [pinUpdating, setPinUpdating] = useState(false);
   
   const [isAvailable, setIsAvailable] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -75,6 +79,34 @@ export default function ProfileScreen() {
       // Revert on failure in real app
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleUpdatePin = async () => {
+    if (!oldPin || !newPin) {
+      Alert.alert('Error', 'Please enter both current and new PIN');
+      return;
+    }
+    setPinUpdating(true);
+    try {
+      const res = await fetch(`${API_URL}/${user?.id}/update-password`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oldPassword: oldPin, newPassword: newPin }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        Alert.alert('Success', data.message || 'Security PIN updated successfully');
+        setShowPinModal(false);
+        setOldPin('');
+        setNewPin('');
+      } else {
+        Alert.alert('Error', data.error || 'Failed to update Security PIN');
+      }
+    } catch (e) {
+      Alert.alert('Error', 'An error occurred while updating the PIN');
+    } finally {
+      setPinUpdating(false);
     }
   };
 
@@ -137,9 +169,54 @@ export default function ProfileScreen() {
         <Text style={[styles.themeBtnText, { fontFamily, fontSize: scaleFont(16), color: themeColors.text }]}>Theme & Display Settings</Text>
       </TouchableOpacity>
 
+      <TouchableOpacity 
+        style={[styles.themeBtn, { borderColor: themeColors.border || '#ccc', marginTop: 15 }]} 
+        onPress={() => setShowPinModal(true)}
+      >
+        <Text style={[styles.themeBtnText, { fontFamily, fontSize: scaleFont(16), color: themeColors.text }]}>Update Security PIN</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={[styles.logoutText, { fontFamily, fontSize: scaleFont(16) }]}>Log Out</Text>
       </TouchableOpacity>
+
+      {/* Update PIN Modal */}
+      <Modal visible={showPinModal} animationType="slide" transparent={true} onRequestClose={() => setShowPinModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: themeColors.card }]}>
+            <Text style={[styles.modalTitle, { fontFamily, color: themeColors.text }]}>Update Security PIN</Text>
+            
+            <Text style={[styles.inputLabel, { fontFamily, color: themeColors.text }]}>Current PIN</Text>
+            <TextInput
+              style={[styles.input, { fontFamily, color: themeColors.text, borderColor: themeColors.border || '#ccc' }]}
+              value={oldPin}
+              onChangeText={setOldPin}
+              placeholder="Enter current PIN"
+              placeholderTextColor={themeColors.tabIconDefault}
+              secureTextEntry
+            />
+            
+            <Text style={[styles.inputLabel, { fontFamily, color: themeColors.text }]}>New PIN</Text>
+            <TextInput
+              style={[styles.input, { fontFamily, color: themeColors.text, borderColor: themeColors.border || '#ccc' }]}
+              value={newPin}
+              onChangeText={setNewPin}
+              placeholder="Enter new PIN"
+              placeholderTextColor={themeColors.tabIconDefault}
+              secureTextEntry
+            />
+            
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => { setShowPinModal(false); setOldPin(''); setNewPin(''); }}>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleUpdatePin} disabled={pinUpdating}>
+                {pinUpdating ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Update PIN</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -229,6 +306,62 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   logoutText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '85%',
+    padding: 20,
+    borderRadius: 12,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  inputLabel: {
+    fontSize: 14,
+    marginBottom: 8,
+    fontWeight: '600',
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  cancelBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#f1f1f1',
+  },
+  cancelBtnText: {
+    color: '#333',
+    fontWeight: 'bold',
+  },
+  saveBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#0a7ea4',
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  saveBtnText: {
     color: '#fff',
     fontWeight: 'bold',
   },
