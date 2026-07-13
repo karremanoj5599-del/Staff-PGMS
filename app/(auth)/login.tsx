@@ -10,9 +10,9 @@ let host = '127.0.0.1';
 let API_URL = process.env.EXPO_PUBLIC_API_URL;
 if (!API_URL || API_URL.includes('localhost') || API_URL.includes('127.0.0.1')) {
   if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    API_URL = 'https://pgms-nu.vercel.app/api/staff';
+    API_URL = 'https://pgms-nu.vercel.app/api';
   } else {
-    API_URL = 'http://127.0.0.1:5000/api/staff';
+    API_URL = 'http://127.0.0.1:5000/api';
   }
 }
 
