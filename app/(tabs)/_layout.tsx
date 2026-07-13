@@ -68,6 +68,23 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="leaves"
+        options={{
+          title: 'Leaves',
+          tabBarIcon: ({ color }) => (
+            <SymbolView
+              name={{
+                ios: 'calendar',
+                android: 'event',
+                web: 'event',
+              }}
+              tintColor={color}
+              size={28}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="two"
         options={{
           href: null, // Hide the default 'two' tab

@@ -182,10 +182,6 @@ export default function AttendanceScreen() {
                   <Text style={styles.actionBtnText}>Clock Out</Text>
                 </TouchableOpacity>
               </View>
-              
-              <TouchableOpacity style={styles.leaveButton} onPress={handleRequestLeave}>
-                <Text style={styles.leaveBtnText}>Request Leave</Text>
-              </TouchableOpacity>
             </View>
           }
           ListEmptyComponent={

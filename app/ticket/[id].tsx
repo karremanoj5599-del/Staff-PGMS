@@ -35,7 +35,11 @@ export default function TicketDetailsScreen() {
 
   const fetchTicketDetails = async () => {
     try {
-      const res = await fetch(`${API_URL}/tickets/${id}`);
+      const res = await fetch(`${API_URL}/admin/tickets/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${user?.admin_user_id || ''}`
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         setTicket(data);
@@ -68,10 +72,11 @@ export default function TicketDetailsScreen() {
   const updateStatus = async (newStatus: string) => {
     setUpdating(true);
     try {
-      const res = await fetch(`${API_URL}/tickets/${id}/status`, {
+      const res = await fetch(`${API_URL}/admin/tickets/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user?.admin_user_id || ''}`
         },
         body: JSON.stringify({ status: newStatus }),
       });

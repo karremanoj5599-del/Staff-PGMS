@@ -1,6 +1,6 @@
 import { StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'expo-router';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useFocusEffect } from 'expo-router';
 
 import { Text, View } from '@/components/Themed';
 import { useAuth } from '../../context/AuthContext';
@@ -28,9 +28,18 @@ export default function TicketsScreen() {
   const themeColors = Colors[colorScheme ?? 'light'];
 
   const fetchTickets = async () => {
+    if (!user || !user.id) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     try {
-      // In a real app, pass the token in headers
-      const res = await fetch(`${API_URL}/tickets`);
+      // Fetching staff specific tickets via admin routes
+      const res = await fetch(`${API_URL}/admin/staff/${user.id}/tickets`, {
+        headers: {
+          'Authorization': `Bearer ${user.admin_user_id || ''}`
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         // If staff, maybe filter by assigned_staff_id, or backend does it
@@ -54,9 +63,11 @@ export default function TicketsScreen() {
     ]);
   };
 
-  useEffect(() => {
-    fetchTickets();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchTickets();
+    }, [user])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
