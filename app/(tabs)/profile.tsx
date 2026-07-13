@@ -46,17 +46,17 @@ export default function ProfileScreen() {
         if (res.ok) {
           const data = await res.json();
           setIsAvailable(data.is_available);
-          setTradeType(data.trade_type);
+          setTradeType(data.trade_type || 'unassigned');
         } else {
-          // Mock data fallback
+          // Fallback if API fails
           setIsAvailable(true);
-          setTradeType('electrician');
+          setTradeType('unassigned');
         }
       }
     } catch (e) {
-      // Mock data fallback
+      // Fallback
       setIsAvailable(true);
-      setTradeType('electrician');
+      setTradeType('unassigned');
     } finally {
       setLoading(false);
     }
@@ -112,14 +112,20 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert(
-      "Log Out",
-      "Are you sure you want to log out?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Log Out", style: "destructive", onPress: () => logout() }
-      ]
-    );
+    if (Platform.OS === 'web') {
+      if (window.confirm("Are you sure you want to log out?")) {
+        logout();
+      }
+    } else {
+      Alert.alert(
+        "Log Out",
+        "Are you sure you want to log out?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Log Out", style: "destructive", onPress: () => logout() }
+        ]
+      );
+    }
   };
 
   if (loading) {
@@ -139,7 +145,7 @@ export default function ProfileScreen() {
         </View>
         <Text style={[styles.name, { fontFamily, fontSize: scaleFont(24), color: themeColors.text }]}>{user?.name || 'Staff User'}</Text>
         <Text style={[styles.email, { fontFamily, fontSize: scaleFont(16) }]}>{user?.email || 'staff@pgms.com'}</Text>
-        <Text style={[styles.roleBadge, { fontFamily, fontSize: scaleFont(12), backgroundColor: themeColors.tint }]}>{tradeType.toUpperCase()}</Text>
+        <Text style={[styles.roleBadge, { fontFamily, fontSize: scaleFont(12), backgroundColor: themeColors.tint }]}>{(tradeType || 'UNASSIGNED').toUpperCase()}</Text>
       </View>
 
       <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
