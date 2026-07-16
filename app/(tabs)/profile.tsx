@@ -97,13 +97,13 @@ export default function ProfileScreen() {
     }
     setPinUpdating(true);
     try {
-      const res = await fetch(`${API_URL}/staff/${user?.id}/update-password`, {
+      const res = await fetch(`${API_URL}/staff/${user?.id}/update-pin`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
           'x-user-id': user?.admin_user_id?.toString() || ''
         },
-        body: JSON.stringify({ oldPassword: oldPin, newPassword: newPin }),
+        body: JSON.stringify({ oldPin, newPin }),
       });
       const data = await res.json();
       if (res.ok) {
