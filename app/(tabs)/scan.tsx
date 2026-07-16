@@ -192,6 +192,7 @@ export default function ScanScreen() {
             <Text style={styles.cancelBtnText}>Cancel</Text>
           </TouchableOpacity>
         </View>
+      )}
       {/* Manual Code Entry */}
       {!scanned && !loading && (
         <View style={styles.manualContainer}>
