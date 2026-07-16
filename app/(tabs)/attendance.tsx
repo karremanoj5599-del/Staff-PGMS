@@ -46,7 +46,44 @@ export default function AttendanceScreen() {
       });
       if (res.ok) {
         const data = await res.json();
-        setRecords(data);
+        
+        // Group raw logs by date
+        const grouped: Record<string, any> = {};
+        data.forEach((log: any) => {
+          if (!log.punch_time) return;
+          const d = new Date(log.punch_time);
+          const dateStr = d.toISOString().split('T')[0];
+          
+          if (!grouped[dateStr]) {
+            grouped[dateStr] = {
+              id: log.log_id || log.id || Math.floor(Math.random() * 1000000),
+              date: dateStr,
+              status: 'present',
+              check_in_time: undefined,
+              check_out_time: undefined,
+              _first: d,
+              _last: d
+            };
+          } else {
+            const g = grouped[dateStr];
+            if (d < g._first) g._first = d;
+            if (d > g._last) g._last = d;
+          }
+        });
+
+        const formatted = Object.values(grouped).map((g: any) => {
+          const formatTime = (date: Date) => date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+          g.check_in_time = formatTime(g._first);
+          if (g._first.getTime() !== g._last.getTime()) {
+            g.check_out_time = formatTime(g._last);
+          }
+          delete g._first;
+          delete g._last;
+          return g;
+        });
+
+        formatted.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setRecords(formatted);
       } else {
         loadMockData();
       }
