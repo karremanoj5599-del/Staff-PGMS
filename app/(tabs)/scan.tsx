@@ -70,8 +70,8 @@ function WebQRScanner({ onScan, active }: { onScan: (data: string) => void, acti
       mounted = false;
       clearTimeout(timer);
       if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => {});
-        scannerRef.current.clear().catch(() => {});
+        const s = scannerRef.current;
+        s.stop().then(() => s.clear()).catch(() => {});
         scannerRef.current = null;
       }
     };
