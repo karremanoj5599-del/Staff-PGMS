@@ -47,7 +47,7 @@ export default function TicketsScreen() {
       // Fetching staff specific tickets via admin routes
       const res = await fetch(`${API_URL}/admin/staff/${user.id}/tickets`, {
         headers: {
-          'Authorization': `Bearer ${user.admin_user_id || ''}`
+          'x-user-id': user.admin_user_id?.toString() || ''
         }
       });
       if (res.ok) {

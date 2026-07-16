@@ -39,7 +39,11 @@ export default function AttendanceScreen() {
 
   const fetchAttendance = async () => {
     try {
-      const res = await fetch(`${API_URL}/staff/${user?.id}/attendance`);
+      const res = await fetch(`${API_URL}/staff/${user?.id}/attendance`, {
+        headers: {
+          'x-user-id': user?.admin_user_id?.toString() || ''
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         setRecords(data);
@@ -56,7 +60,12 @@ export default function AttendanceScreen() {
   const handleClockIn = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_URL}/staff/${user?.id}/attendance/clock-in`, { method: 'POST' });
+      const res = await fetch(`${API_URL}/staff/${user?.id}/attendance/clock-in`, { 
+        method: 'POST',
+        headers: {
+          'x-user-id': user?.admin_user_id?.toString() || ''
+        }
+      });
       if (res.ok) {
         alert('Clocked In successfully!');
         fetchAttendance();
@@ -73,7 +82,12 @@ export default function AttendanceScreen() {
   const handleClockOut = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_URL}/staff/${user?.id}/attendance/clock-out`, { method: 'POST' });
+      const res = await fetch(`${API_URL}/staff/${user?.id}/attendance/clock-out`, { 
+        method: 'POST',
+        headers: {
+          'x-user-id': user?.admin_user_id?.toString() || ''
+        }
+      });
       if (res.ok) {
         alert('Clocked Out successfully!');
         fetchAttendance();
@@ -92,7 +106,10 @@ export default function AttendanceScreen() {
       setLoading(true);
       const res = await fetch(`${API_URL}/staff/${user?.id}/leave`, { 
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-id': user?.admin_user_id?.toString() || ''
+        },
         body: JSON.stringify({ reason: 'Sick Leave', dates: [new Date().toISOString()] })
       });
       if (res.ok) {

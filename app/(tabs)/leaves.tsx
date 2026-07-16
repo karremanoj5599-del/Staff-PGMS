@@ -49,8 +49,8 @@ export default function LeavesScreen() {
   const fetchLeaves = async () => {
     if (!user || !user.id) return;
     try {
-      const res = await fetch(`${API_URL}/admin/staff/${user.id}/leaves`, {
-        headers: { 'Authorization': `Bearer ${user.admin_user_id || ''}` }
+      const res = await fetch(`${API_URL}/staff/${user.id}/leaves`, {
+        headers: { 'x-user-id': user.admin_user_id?.toString() || '' }
       });
       if (res.ok) {
         const data = await res.json();
@@ -70,11 +70,11 @@ export default function LeavesScreen() {
     }
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_URL}/admin/staff/${user?.id}/leave`, { 
+      const res = await fetch(`${API_URL}/staff/${user?.id}/leave`, { 
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user?.admin_user_id || ''}`
+          'x-user-id': user?.admin_user_id?.toString() || ''
         },
         body: JSON.stringify({ start_date: startDate, end_date: endDate, reason })
       });

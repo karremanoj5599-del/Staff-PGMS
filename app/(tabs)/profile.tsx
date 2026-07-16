@@ -42,7 +42,11 @@ export default function ProfileScreen() {
       // Typically fetch user profile including staff details
       // Using mock endpoint or assume we get it from auth
       if (user?.id) {
-        const res = await fetch(`${API_URL}/staff/${user.id}`);
+        const res = await fetch(`${API_URL}/staff/${user.id}`, {
+          headers: {
+            'x-user-id': user.admin_user_id?.toString() || ''
+          }
+        });
         if (res.ok) {
           const data = await res.json();
           setIsAvailable(data.is_available);
@@ -68,7 +72,10 @@ export default function ProfileScreen() {
     try {
       const res = await fetch(`${API_URL}/staff/${user?.id}/availability`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-id': user?.admin_user_id?.toString() || ''
+        },
         body: JSON.stringify({ is_available: value }),
       });
       if (!res.ok) {
@@ -92,7 +99,10 @@ export default function ProfileScreen() {
     try {
       const res = await fetch(`${API_URL}/staff/${user?.id}/update-password`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-id': user?.admin_user_id?.toString() || ''
+        },
         body: JSON.stringify({ oldPassword: oldPin, newPassword: newPin }),
       });
       const data = await res.json();
