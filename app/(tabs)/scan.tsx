@@ -19,21 +19,22 @@ export default function ScanScreen() {
     })();
   }, []);
 
-  const handleBarCodeScanned = async ({ type, data }: { type: string, data: string }) => {
-    setScanned(true);
+  const processScan = async (data: string, action: 'entry' | 'exit') => {
     setLoading(true);
-
     try {
       const token = Platform.OS === 'web' ? localStorage.getItem('token') : await SecureStore.getItemAsync('token');
       const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/staff/visitors/scan`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-id': user?.id?.toString() || '', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ pass_code: data })
+        body: JSON.stringify({ pass_code: data, action, staff_name: user?.name || '' })
       });
       const result = await response.json();
       
       if (result.success) {
-        Alert.alert('Success!', `Visitor Checked In: ${result.visitor.name}`, [
+        const tenantStr = result.visitor.tenant_name && result.visitor.tenant_name !== 'Unknown' 
+          ? `\nRequested by: ${result.visitor.tenant_name}` 
+          : '';
+        Alert.alert('Success!', `Visitor ${action === 'entry' ? 'Entered' : 'Exited'}: ${result.visitor.name}${tenantStr}`, [
           { text: 'OK', onPress: () => setScanned(false) }
         ]);
       } else {
@@ -49,6 +50,20 @@ export default function ScanScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBarCodeScanned = async ({ type, data }: { type: string, data: string }) => {
+    setScanned(true);
+
+    Alert.alert(
+      'Visitor Scanned',
+      'Is this visitor entering or exiting?',
+      [
+        { text: 'Mark Entry', onPress: () => processScan(data, 'entry') },
+        { text: 'Mark Exit', onPress: () => processScan(data, 'exit') },
+        { text: 'Cancel', onPress: () => setScanned(false), style: 'cancel' }
+      ]
+    );
   };
 
   if (hasPermission === null) return <View style={styles.container}><Text>Requesting camera permission...</Text></View>;
