@@ -101,10 +101,10 @@ export default function TicketsScreen() {
       <View style={styles.cardHeader}>
         <Text style={styles.ticketId}>#{item.id}</Text>
         <View style={[styles.statusBadge, getStatusStyle(item.status)]}>
-          <Text style={styles.statusText}>{item.status.replace('_', ' ').toUpperCase()}</Text>
+          <Text style={styles.statusText}>{(item.status || '').replace('_', ' ').toUpperCase()}</Text>
         </View>
       </View>
-      <Text style={styles.category}>{item.issue_category.toUpperCase()}</Text>
+      <Text style={styles.category}>{(item.issue_category || '').toUpperCase()}</Text>
       <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
     </TouchableOpacity>
   );

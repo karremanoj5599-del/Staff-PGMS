@@ -3,6 +3,17 @@ import { StyleSheet, View, Text, TouchableOpacity, Alert, ActivityIndicator, Pla
 import * as SecureStore from 'expo-secure-store';
 import { useAuth } from '../../context/AuthContext';
 
+let host = '127.0.0.1';
+let API_URL = process.env.EXPO_PUBLIC_API_URL || '';
+API_URL = API_URL.replace(/\/staff\/?$/, '');
+if (!API_URL || API_URL.includes('localhost') || API_URL.includes('127.0.0.1')) {
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    API_URL = 'https://pgms-nu.vercel.app/api';
+  } else {
+    API_URL = 'http://127.0.0.1:5000/api';
+  }
+}
+
 // Web QR Scanner Component
 function WebQRScanner({ onScan, active }: { onScan: (data: string) => void, active: boolean }) {
   const scannerRef = useRef<any>(null);
@@ -102,7 +113,7 @@ export default function ScanScreen() {
     setLoading(true);
     try {
       const token = Platform.OS === 'web' ? localStorage.getItem('token') : await SecureStore.getItemAsync('token');
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/staff/visitors/scan`, {
+      const response = await fetch(`${API_URL}/staff/visitors/scan`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-id': user?.id?.toString() || '', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ pass_code: data, action, staff_name: user?.name || '' })

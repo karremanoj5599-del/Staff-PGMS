@@ -151,7 +151,7 @@ export default function ProfileScreen() {
       <ThemeSettingsModal visible={showThemeModal} onClose={() => setShowThemeModal(false)} />
       <View style={styles.profileHeader}>
         <View style={[styles.avatar, { backgroundColor: themeColors.tint }]}>
-          <Text style={[styles.avatarText, { fontFamily, fontSize: scaleFont(32) }]}>{user?.name?.charAt(0).toUpperCase() || 'S'}</Text>
+          <Text style={[styles.avatarText, { fontFamily, fontSize: scaleFont(32) }]}>{(user?.name?.charAt(0) || 'S').toUpperCase()}</Text>
         </View>
         <Text style={[styles.name, { fontFamily, fontSize: scaleFont(24), color: themeColors.text }]}>{user?.name || 'Staff User'}</Text>
         <Text style={[styles.email, { fontFamily, fontSize: scaleFont(16) }]}>{user?.email || 'staff@pgms.com'}</Text>

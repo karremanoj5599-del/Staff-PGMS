@@ -137,9 +137,9 @@ export default function TicketDetailsScreen() {
       
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.category}>{ticket.issue_category.toUpperCase()}</Text>
+          <Text style={styles.category}>{(ticket.issue_category || '').toUpperCase()}</Text>
           <View style={[styles.statusBadge, getStatusStyle(ticket.status)]}>
-            <Text style={styles.statusText}>{ticket.status.replace('_', ' ').toUpperCase()}</Text>
+            <Text style={styles.statusText}>{(ticket.status || '').replace('_', ' ').toUpperCase()}</Text>
           </View>
         </View>
 
