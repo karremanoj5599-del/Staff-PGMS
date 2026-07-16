@@ -1,24 +1,101 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import { Camera, CameraView } from 'expo-camera';
 import { useAuth } from '../../context/AuthContext';
 
+// Web QR Scanner Component
+function WebQRScanner({ onScan, active }: { onScan: (data: string) => void, active: boolean }) {
+  const scannerRef = useRef<any>(null);
+  const containerRef = useRef<string>('qr-reader-' + Date.now());
+
+  useEffect(() => {
+    if (!active) return;
+
+    let scanner: any = null;
+    let mounted = true;
+
+    const startScanner = async () => {
+      try {
+        // Dynamically import html5-qrcode (web only)
+        const { Html5Qrcode } = await import('html5-qrcode');
+        if (!mounted) return;
+
+        scanner = new Html5Qrcode(containerRef.current);
+        scannerRef.current = scanner;
+
+        await scanner.start(
+          { facingMode: 'environment' },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0,
+          },
+          (decodedText: string) => {
+            if (decodedText && mounted) {
+              onScan(decodedText);
+            }
+          },
+          () => {} // ignore scan failures (no QR found in frame)
+        );
+      } catch (err) {
+        console.error('Scanner start error:', err);
+        // Try front camera as fallback
+        try {
+          const { Html5Qrcode } = await import('html5-qrcode');
+          if (!mounted) return;
+          if (!scanner) {
+            scanner = new Html5Qrcode(containerRef.current);
+            scannerRef.current = scanner;
+          }
+          await scanner.start(
+            { facingMode: 'user' },
+            { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
+            (decodedText: string) => {
+              if (decodedText && mounted) {
+                onScan(decodedText);
+              }
+            },
+            () => {}
+          );
+        } catch (fallbackErr) {
+          console.error('Fallback camera also failed:', fallbackErr);
+        }
+      }
+    };
+
+    // Small delay to ensure DOM element is mounted
+    const timer = setTimeout(startScanner, 300);
+
+    return () => {
+      mounted = false;
+      clearTimeout(timer);
+      if (scannerRef.current) {
+        scannerRef.current.stop().catch(() => {});
+        scannerRef.current.clear().catch(() => {});
+        scannerRef.current = null;
+      }
+    };
+  }, [active, onScan]);
+
+  return (
+    <div
+      id={containerRef.current}
+      style={{
+        width: '100%',
+        height: '100%',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+      }}
+    />
+  );
+}
 
 export default function ScanScreen() {
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const [facing, setFacing] = useState<'front' | 'back'>('back');
   const [scanned, setScanned] = useState(false);
   const [scannedData, setScannedData] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
-
-  useEffect(() => {
-    (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
-    })();
-  }, []);
 
   const processScan = async (data: string, action: 'entry' | 'exit') => {
     setLoading(true);
@@ -53,35 +130,20 @@ export default function ScanScreen() {
     }
   };
 
-  const handleBarCodeScanned = async ({ type, data }: { type: string, data: string }) => {
-    // Prevent empty or invalid scans from triggering the prompt
-    if (!data) return;
+  const handleScan = useCallback((data: string) => {
+    if (scanned || !data) return;
     setScannedData(data);
     setScanned(true);
-  };
-
-  if (hasPermission === null) return <View style={styles.container}><Text>Requesting camera permission...</Text></View>;
-  if (hasPermission === false) return <View style={styles.container}><Text>No access to camera</Text></View>;
+  }, [scanned]);
 
   return (
     <View style={styles.container}>
-      <CameraView
-        style={StyleSheet.absoluteFill}
-        facing={facing}
-        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-        barcodeScannerSettings={{
-          barcodeTypes: ["qr"],
-        }}
-      />
-      
-      {/* Camera Flip Button */}
-      <TouchableOpacity 
-        style={styles.flipButton} 
-        onPress={() => setFacing(current => (current === 'back' ? 'front' : 'back'))}
-      >
-        <Text style={styles.flipText}>Flip Camera</Text>
-      </TouchableOpacity>
-      
+      {/* Web QR Scanner */}
+      {Platform.OS === 'web' && (
+        <WebQRScanner onScan={handleScan} active={!scanned} />
+      )}
+
+      {/* Overlay with scan box */}
       <View style={styles.overlay}>
         <View style={styles.scanBox}>
           <View style={[styles.corner, styles.topLeft]} />
@@ -122,9 +184,7 @@ export default function ScanScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },
-  flipButton: { position: 'absolute', top: 50, right: 20, backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 8, zIndex: 10 },
-  flipText: { color: '#fff', fontWeight: 'bold' },
-  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', pointerEvents: 'none' },
+  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', pointerEvents: 'none', zIndex: 2 },
   scanBox: { width: 250, height: 250, backgroundColor: 'transparent' },
   corner: { position: 'absolute', width: 40, height: 40, borderColor: '#fff' },
   topLeft: { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 10 },
@@ -132,9 +192,9 @@ const styles = StyleSheet.create({
   bottomLeft: { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 10 },
   bottomRight: { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 10 },
   scanText: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginTop: 40 },
-  loadingContainer: { position: 'absolute', bottom: 100, backgroundColor: 'rgba(255,255,255,0.9)', padding: 20, borderRadius: 12, alignItems: 'center' },
+  loadingContainer: { position: 'absolute', bottom: 100, backgroundColor: 'rgba(255,255,255,0.9)', padding: 20, borderRadius: 12, alignItems: 'center', zIndex: 3 },
   loadingText: { marginTop: 10, fontSize: 16, fontWeight: '600', color: '#1e293b' },
-  promptContainer: { position: 'absolute', bottom: 40, backgroundColor: '#fff', padding: 20, borderRadius: 16, width: '90%', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, elevation: 5 },
+  promptContainer: { position: 'absolute', bottom: 40, backgroundColor: '#fff', padding: 20, borderRadius: 16, width: '90%', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, elevation: 5, zIndex: 3 },
   promptTitle: { fontSize: 20, fontWeight: 'bold', color: '#1e293b', marginBottom: 5 },
   promptSub: { fontSize: 14, color: '#64748b', marginBottom: 20 },
   promptButtons: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', gap: 10, marginBottom: 15 },
