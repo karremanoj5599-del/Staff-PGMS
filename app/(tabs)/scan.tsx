@@ -112,7 +112,10 @@ export default function ScanScreen() {
         const tenantStr = result.visitor.tenant_name && result.visitor.tenant_name !== 'Unknown' 
           ? `\nRequested by: ${result.visitor.tenant_name}` 
           : '';
-        Alert.alert('Success!', `Visitor ${action === 'entry' ? 'Entered' : 'Exited'}: ${result.visitor.name}${tenantStr}`);
+        Alert.alert(
+          action === 'entry' ? '✅ Entry Marked' : '🚪 Exit Marked', 
+          `${result.visitor.name}${tenantStr}`
+        );
         setScanned(false);
         setScannedData(null);
       } else {
