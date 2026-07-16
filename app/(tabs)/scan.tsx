@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { Camera, CameraView } from 'expo-camera';
-import { BlurView } from 'expo-blur';
 import { useAuth } from '../../context/AuthContext';
 
 
@@ -79,7 +78,7 @@ export default function ScanScreen() {
         }}
       />
       
-      <BlurView intensity={60} tint="dark" style={styles.overlay}>
+      <View style={styles.overlay}>
         <View style={styles.scanBox}>
           <View style={[styles.corner, styles.topLeft]} />
           <View style={[styles.corner, styles.topRight]} />
@@ -87,7 +86,7 @@ export default function ScanScreen() {
           <View style={[styles.corner, styles.bottomRight]} />
         </View>
         <Text style={styles.scanText}>Scan Visitor's QR Code</Text>
-      </BlurView>
+      </View>
 
       {loading && (
         <View style={styles.loadingContainer}>
@@ -107,7 +106,7 @@ export default function ScanScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },
-  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)' },
+  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' },
   scanBox: { width: 250, height: 250, backgroundColor: 'transparent' },
   corner: { position: 'absolute', width: 40, height: 40, borderColor: '#fff' },
   topLeft: { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 10 },
