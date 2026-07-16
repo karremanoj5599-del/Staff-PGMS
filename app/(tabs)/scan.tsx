@@ -114,7 +114,7 @@ export default function ScanScreen() {
           ? `\nRequested by: ${result.visitor.tenant_name}` 
           : '';
         Alert.alert(
-          action === 'entry' ? '✅ Entry Marked' : '🚪 Exit Marked', 
+          action === 'entry' ? 'Marked Entry' : 'Marked Exit', 
           `${result.visitor.name}${tenantStr}`
         );
         setScanned(false);
