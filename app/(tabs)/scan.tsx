@@ -9,6 +9,7 @@ export default function ScanScreen() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [facing, setFacing] = useState<'front' | 'back'>('back');
   const [scanned, setScanned] = useState(false);
+  const [scannedData, setScannedData] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
 
@@ -34,36 +35,29 @@ export default function ScanScreen() {
         const tenantStr = result.visitor.tenant_name && result.visitor.tenant_name !== 'Unknown' 
           ? `\nRequested by: ${result.visitor.tenant_name}` 
           : '';
-        Alert.alert('Success!', `Visitor ${action === 'entry' ? 'Entered' : 'Exited'}: ${result.visitor.name}${tenantStr}`, [
-          { text: 'OK', onPress: () => setScanned(false) }
-        ]);
+        Alert.alert('Success!', `Visitor ${action === 'entry' ? 'Entered' : 'Exited'}: ${result.visitor.name}${tenantStr}`);
+        setScanned(false);
+        setScannedData(null);
       } else {
-        Alert.alert('Scan Failed', result.error || 'Invalid QR code', [
-          { text: 'Try Again', onPress: () => setScanned(false) }
-        ]);
+        Alert.alert('Scan Failed', result.error || 'Invalid QR code');
+        setScanned(false);
+        setScannedData(null);
       }
     } catch (err) {
       console.error(err);
-      Alert.alert('Error', 'Failed to connect to the server', [
-        { text: 'OK', onPress: () => setScanned(false) }
-      ]);
+      Alert.alert('Error', 'Failed to connect to the server');
+      setScanned(false);
+      setScannedData(null);
     } finally {
       setLoading(false);
     }
   };
 
   const handleBarCodeScanned = async ({ type, data }: { type: string, data: string }) => {
+    // Prevent empty or invalid scans from triggering the prompt
+    if (!data) return;
+    setScannedData(data);
     setScanned(true);
-
-    Alert.alert(
-      'Visitor Scanned',
-      'Is this visitor entering or exiting?',
-      [
-        { text: 'Mark Entry', onPress: () => processScan(data, 'entry') },
-        { text: 'Mark Exit', onPress: () => processScan(data, 'exit') },
-        { text: 'Cancel', onPress: () => setScanned(false), style: 'cancel' }
-      ]
-    );
   };
 
   if (hasPermission === null) return <View style={styles.container}><Text>Requesting camera permission...</Text></View>;
@@ -105,10 +99,22 @@ export default function ScanScreen() {
         </View>
       )}
 
-      {scanned && !loading && (
-        <TouchableOpacity style={styles.rescanButton} onPress={() => setScanned(false)}>
-          <Text style={styles.rescanButtonText}>Tap to Scan Again</Text>
-        </TouchableOpacity>
+      {scanned && !loading && scannedData && (
+        <View style={styles.promptContainer}>
+          <Text style={styles.promptTitle}>Visitor Scanned</Text>
+          <Text style={styles.promptSub}>Is this visitor entering or exiting?</Text>
+          <View style={styles.promptButtons}>
+            <TouchableOpacity style={[styles.promptBtn, { backgroundColor: '#10b981' }]} onPress={() => processScan(scannedData, 'entry')}>
+              <Text style={styles.promptBtnText}>Mark Entry</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.promptBtn, { backgroundColor: '#f59e0b' }]} onPress={() => processScan(scannedData, 'exit')}>
+              <Text style={styles.promptBtnText}>Mark Exit</Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity style={styles.cancelBtn} onPress={() => { setScanned(false); setScannedData(null); }}>
+            <Text style={styles.cancelBtnText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );
@@ -128,6 +134,12 @@ const styles = StyleSheet.create({
   scanText: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginTop: 40 },
   loadingContainer: { position: 'absolute', bottom: 100, backgroundColor: 'rgba(255,255,255,0.9)', padding: 20, borderRadius: 12, alignItems: 'center' },
   loadingText: { marginTop: 10, fontSize: 16, fontWeight: '600', color: '#1e293b' },
-  rescanButton: { position: 'absolute', bottom: 50, backgroundColor: '#4f46e5', paddingHorizontal: 30, paddingVertical: 15, borderRadius: 30 },
-  rescanButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
+  promptContainer: { position: 'absolute', bottom: 40, backgroundColor: '#fff', padding: 20, borderRadius: 16, width: '90%', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, elevation: 5 },
+  promptTitle: { fontSize: 20, fontWeight: 'bold', color: '#1e293b', marginBottom: 5 },
+  promptSub: { fontSize: 14, color: '#64748b', marginBottom: 20 },
+  promptButtons: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', gap: 10, marginBottom: 15 },
+  promptBtn: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
+  promptBtnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  cancelBtn: { paddingVertical: 10, width: '100%', alignItems: 'center' },
+  cancelBtnText: { color: '#64748b', fontSize: 16, fontWeight: 'bold' }
 });
