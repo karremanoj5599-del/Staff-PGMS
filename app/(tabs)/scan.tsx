@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Alert, ActivityIndicator, Platform, TextInput, KeyboardAvoidingView, ScrollView } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useAuth } from '../../context/AuthContext';
 
@@ -95,6 +95,7 @@ export default function ScanScreen() {
   const [scanned, setScanned] = useState(false);
   const [scannedData, setScannedData] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [manualCode, setManualCode] = useState('');
   const { user } = useAuth();
 
   const processScan = async (data: string, action: 'entry' | 'exit') => {
@@ -139,6 +140,17 @@ export default function ScanScreen() {
     setScanned(true);
   }, [scanned]);
 
+  const handleManualSubmit = () => {
+    const code = manualCode.trim();
+    if (!code) {
+      Alert.alert('Error', 'Please enter a pass code');
+      return;
+    }
+    setScannedData(code);
+    setScanned(true);
+    setManualCode('');
+  };
+
   return (
     <View style={styles.container}>
       {/* Web QR Scanner */}
@@ -180,6 +192,25 @@ export default function ScanScreen() {
             <Text style={styles.cancelBtnText}>Cancel</Text>
           </TouchableOpacity>
         </View>
+      {/* Manual Code Entry */}
+      {!scanned && !loading && (
+        <View style={styles.manualContainer}>
+          <Text style={styles.manualLabel}>Or enter pass code manually</Text>
+          <View style={styles.manualRow}>
+            <TextInput
+              style={styles.manualInput}
+              placeholder="Enter 6-digit code"
+              placeholderTextColor="#94a3b8"
+              value={manualCode}
+              onChangeText={setManualCode}
+              keyboardType="number-pad"
+              maxLength={6}
+            />
+            <TouchableOpacity style={styles.verifyBtn} onPress={handleManualSubmit}>
+              <Text style={styles.verifyBtnText}>Verify</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       )}
     </View>
   );
@@ -204,5 +235,11 @@ const styles = StyleSheet.create({
   promptBtn: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
   promptBtnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
   cancelBtn: { paddingVertical: 10, width: '100%', alignItems: 'center' },
-  cancelBtnText: { color: '#64748b', fontSize: 16, fontWeight: 'bold' }
+  cancelBtnText: { color: '#64748b', fontSize: 16, fontWeight: 'bold' },
+  manualContainer: { position: 'absolute', bottom: 30, backgroundColor: 'rgba(255,255,255,0.95)', padding: 16, borderRadius: 16, width: '90%', alignItems: 'center', zIndex: 3 },
+  manualLabel: { fontSize: 13, color: '#64748b', marginBottom: 10, fontWeight: '600' },
+  manualRow: { flexDirection: 'row', width: '100%', gap: 10 },
+  manualInput: { flex: 1, backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 10, padding: 12, fontSize: 18, letterSpacing: 4, textAlign: 'center', fontWeight: 'bold', color: '#1e293b' },
+  verifyBtn: { backgroundColor: '#4f46e5', paddingHorizontal: 20, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  verifyBtnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
 });
