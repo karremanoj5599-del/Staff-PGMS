@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 
 export default function ScanScreen() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [facing, setFacing] = useState<'front' | 'back'>('back');
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
@@ -72,11 +73,20 @@ export default function ScanScreen() {
     <View style={styles.container}>
       <CameraView
         style={StyleSheet.absoluteFill}
+        facing={facing}
         onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
         barcodeScannerSettings={{
           barcodeTypes: ["qr"],
         }}
       />
+      
+      {/* Camera Flip Button */}
+      <TouchableOpacity 
+        style={styles.flipButton} 
+        onPress={() => setFacing(current => (current === 'back' ? 'front' : 'back'))}
+      >
+        <Text style={styles.flipText}>Flip Camera</Text>
+      </TouchableOpacity>
       
       <View style={styles.overlay}>
         <View style={styles.scanBox}>
@@ -106,7 +116,9 @@ export default function ScanScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },
-  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' },
+  flipButton: { position: 'absolute', top: 50, right: 20, backgroundColor: 'rgba(255,255,255,0.2)', padding: 10, borderRadius: 8, zIndex: 10 },
+  flipText: { color: '#fff', fontWeight: 'bold' },
+  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', pointerEvents: 'none' },
   scanBox: { width: 250, height: 250, backgroundColor: 'transparent' },
   corner: { position: 'absolute', width: 40, height: 40, borderColor: '#fff' },
   topLeft: { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 10 },
