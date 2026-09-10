@@ -48,10 +48,34 @@ class _TicketListScreenState extends State<TicketListScreen> {
     final theme = Provider.of<ThemeProvider>(context);
     final colors = theme.resolvedColors(context);
 
+    final auth = Provider.of<AuthProvider>(context);
+    final user = auth.user;
+
     return Scaffold(
       backgroundColor: colors.background,
       appBar: AppBar(
-        title: const Text('Tickets'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              user?.pgName ?? 'Tickets',
+              style: TextStyle(
+                fontSize: 18 * theme.uiScale,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (user?.pgName != null)
+              Text(
+                'Staff Portal',
+                style: TextStyle(
+                  fontSize: 11 * theme.uiScale,
+                  color: colors.textMuted,
+                  fontWeight: FontWeight.normal,
+                ),
+              ),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.qr_code_scanner),

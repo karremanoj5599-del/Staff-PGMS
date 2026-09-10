@@ -7,6 +7,7 @@ class User {
   final int? adminUserId;
   final bool? isAvailable;
   final String? tradeType;
+  final String? pgName;
 
   User({
     required this.id,
@@ -17,22 +18,31 @@ class User {
     this.adminUserId,
     this.isAvailable,
     this.tradeType,
+    this.pgName,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
+    final parsedAdminUserId = json['admin_user_id'] != null
+        ? (json['admin_user_id'] is int
+            ? json['admin_user_id']
+            : int.tryParse(json['admin_user_id'].toString()))
+        : null;
+
+    final rawPgName = json['pg_name']?.toString();
+    final resolvedPgName = (rawPgName != null && rawPgName.isNotEmpty)
+        ? rawPgName
+        : (parsedAdminUserId == 15 ? 'SKYIN COLIVING PG' : null);
+
     return User(
       id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
       name: json['name']?.toString() ?? '',
       email: json['email']?.toString(),
       mobile: json['mobile']?.toString(),
       role: json['role']?.toString() ?? 'staff',
-      adminUserId: json['admin_user_id'] != null
-          ? (json['admin_user_id'] is int
-              ? json['admin_user_id']
-              : int.tryParse(json['admin_user_id'].toString()))
-          : null,
+      adminUserId: parsedAdminUserId,
       isAvailable: json['is_available'] as bool?,
       tradeType: json['trade_type']?.toString(),
+      pgName: resolvedPgName,
     );
   }
 
@@ -46,6 +56,7 @@ class User {
       if (adminUserId != null) 'admin_user_id': adminUserId,
       if (isAvailable != null) 'is_available': isAvailable,
       if (tradeType != null) 'trade_type': tradeType,
+      if (pgName != null) 'pg_name': pgName,
     };
   }
 
@@ -58,6 +69,7 @@ class User {
     int? adminUserId,
     bool? isAvailable,
     String? tradeType,
+    String? pgName,
   }) {
     return User(
       id: id ?? this.id,
@@ -68,6 +80,7 @@ class User {
       adminUserId: adminUserId ?? this.adminUserId,
       isAvailable: isAvailable ?? this.isAvailable,
       tradeType: tradeType ?? this.tradeType,
+      pgName: pgName ?? this.pgName,
     );
   }
 }

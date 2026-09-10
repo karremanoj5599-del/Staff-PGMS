@@ -171,6 +171,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
+            if (user?.pgName != null && user!.pgName!.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: colors.card,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: colors.separator),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.business, size: 16, color: colors.accent),
+                    const SizedBox(width: 8),
+                    Text(
+                      user.pgName!,
+                      style: TextStyle(
+                        fontSize: 13 * theme.uiScale,
+                        fontWeight: FontWeight.w600,
+                        color: colors.text,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 24),
             Divider(color: colors.separator),
             const SizedBox(height: 12),

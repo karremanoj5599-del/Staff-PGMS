@@ -24,13 +24,16 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _handleLogin({String? overrideMobile, String? overridePassword}) async {
-    final mobile = overrideMobile ?? _mobileController.text.trim();
-    final password = overridePassword ?? _passwordController.text;
+  Future<void> _handleLogin() async {
+    final mobile = _mobileController.text.trim();
+    final password = _passwordController.text;
 
     if (mobile.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your mobile number and password')),
+        const SnackBar(
+          content: Text('Please enter your mobile number and password'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       return;
     }
@@ -43,27 +46,15 @@ class _LoginScreenState extends State<LoginScreen> {
     if (mounted) {
       setState(() => _loading = false);
       if (error != null) {
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Login Failed'),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
             content: Text(error),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('OK'),
-              ),
-            ],
+            backgroundColor: Colors.red.shade700,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
     }
-  }
-
-  void _handleDemoLogin() {
-    _mobileController.text = '0000000000';
-    _passwordController.text = 'password123';
-    _handleLogin(overrideMobile: '0000000000', overridePassword: 'password123');
   }
 
   @override
@@ -113,8 +104,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 18),
 
                   AppTextField(
-                    label: 'Password',
-                    placeholder: 'Enter your password',
+                    label: 'Password / PIN',
+                    placeholder: 'Enter your password or PIN',
                     controller: _passwordController,
                     obscureText: true,
                     prefixIcon: Icon(Icons.lock, color: colors.textMuted),
@@ -124,15 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   AppButton(
                     text: 'Log In',
                     isLoading: _loading,
-                    onPressed: () => _handleLogin(),
-                  ),
-                  const SizedBox(height: 14),
-
-                  AppButton(
-                    text: 'Demo Login',
-                    variant: AppButtonVariant.outline,
-                    isLoading: _loading,
-                    onPressed: _handleDemoLogin,
+                    onPressed: _handleLogin,
                   ),
                 ],
               ),

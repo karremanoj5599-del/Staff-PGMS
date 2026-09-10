@@ -62,24 +62,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> demoLogin() async {
-    // Try online demo login first; if fails, fall back to offline demo user
-    final err = await login('0000000000', 'password123');
-    if (err != null) {
-      final demoUser = User(
-        id: 1,
-        name: 'Demo Staff',
-        email: 'staff@pgms.com',
-        mobile: '0000000000',
-        role: 'staff',
-        adminUserId: 1,
-        isAvailable: true,
-        tradeType: 'plumber',
-      );
-      await _saveAuthData(demoUser, 'demo_token');
-    }
-  }
-
   Future<void> _saveAuthData(User userData, String token) async {
     _user = userData;
     _token = token;

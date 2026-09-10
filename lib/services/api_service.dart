@@ -23,12 +23,8 @@ class ApiService {
   Map<String, String> _headers({String? adminUserId, String? token, String? userId}) {
     final map = <String, String>{
       'Content-Type': 'application/json',
+      'x-user-id': adminUserId ?? userId ?? '1',
     };
-    if (adminUserId != null && adminUserId.isNotEmpty) {
-      map['x-user-id'] = adminUserId;
-    } else if (userId != null && userId.isNotEmpty) {
-      map['x-user-id'] = userId;
-    }
     if (token != null && token.isNotEmpty) {
       map['Authorization'] = 'Bearer $token';
     }
@@ -40,7 +36,10 @@ class ApiService {
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/staff/login'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': '1',
+        },
         body: jsonEncode({'mobile': mobile, 'password': password}),
       );
 
@@ -48,13 +47,12 @@ class ApiService {
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final userData = body['user'];
-        final role = userData['role']?.toString() ?? '';
-        final allowedRoles = ['staff', 'admin', 'Cleaning', 'Security', 'Cook'];
+        final role = userData['role']?.toString().toLowerCase().trim() ?? '';
 
-        if (!allowedRoles.contains(role)) {
+        if (role == 'tenant') {
           return ApiResponse(
             success: false,
-            error: 'Access Denied: Only staff members can use this app.',
+            error: 'Access Denied: Tenants should log in via the Tenant app.',
           );
         }
 
