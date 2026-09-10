@@ -23,8 +23,11 @@ class ApiService {
   Map<String, String> _headers({String? adminUserId, String? token, String? userId}) {
     final map = <String, String>{
       'Content-Type': 'application/json',
-      'x-user-id': adminUserId ?? userId ?? '1',
     };
+    final resolvedId = adminUserId ?? userId;
+    if (resolvedId != null && resolvedId.isNotEmpty) {
+      map['x-user-id'] = resolvedId;
+    }
     if (token != null && token.isNotEmpty) {
       map['Authorization'] = 'Bearer $token';
     }
@@ -38,7 +41,6 @@ class ApiService {
         Uri.parse('$_baseUrl/staff/login'),
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': '1',
         },
         body: jsonEncode({'mobile': mobile, 'password': password}),
       );
