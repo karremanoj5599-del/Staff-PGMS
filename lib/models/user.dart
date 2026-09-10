@@ -29,9 +29,7 @@ class User {
         : null;
 
     final rawPgName = json['pg_name']?.toString();
-    final resolvedPgName = (rawPgName != null && rawPgName.isNotEmpty)
-        ? rawPgName
-        : (parsedAdminUserId == 15 ? 'SKYIN COLIVING PG' : null);
+    final resolvedPgName = (rawPgName != null && rawPgName.isNotEmpty) ? rawPgName : null;
 
     return User(
       id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
