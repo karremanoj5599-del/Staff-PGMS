@@ -196,12 +196,14 @@ class ApiService {
         final Map<String, Map<String, dynamic>> grouped = {};
 
         for (final log in list) {
+          if (log is! Map<String, dynamic>) continue;
           final punchTimeStr = log['punch_time']?.toString();
           if (punchTimeStr == null || punchTimeStr.isEmpty) continue;
           final dt = DateTime.tryParse(punchTimeStr);
           if (dt == null) continue;
 
           final dateStr = dt.toIso8601String().split('T')[0];
+          final punchLog = PunchLog.fromJson(log);
 
           if (!grouped.containsKey(dateStr)) {
             grouped[dateStr] = {
@@ -210,6 +212,8 @@ class ApiService {
               'status': 'present',
               '_first': dt,
               '_last': dt,
+              'is_late': log['is_late'] == true,
+              'punches': <PunchLog>[punchLog],
             };
           } else {
             final g = grouped[dateStr]!;
@@ -217,6 +221,8 @@ class ApiService {
             final last = g['_last'] as DateTime;
             if (dt.isBefore(first)) g['_first'] = dt;
             if (dt.isAfter(last)) g['_last'] = dt;
+            if (log['is_late'] == true) g['is_late'] = true;
+            (g['punches'] as List<PunchLog>).add(punchLog);
           }
         }
 
@@ -230,12 +236,17 @@ class ApiService {
         final formatted = grouped.values.map((g) {
           final first = g['_first'] as DateTime;
           final last = g['_last'] as DateTime;
+          final punches = (g['punches'] as List<PunchLog>);
+          punches.sort((a, b) => b.punchTime.compareTo(a.punchTime));
+
           return AttendanceRecord(
             id: g['id'] as int,
             date: g['date'] as String,
             status: g['status'] as String,
             checkInTime: formatTime(first),
             checkOutTime: first != last ? formatTime(last) : null,
+            punches: punches,
+            isLate: g['is_late'] == true,
           );
         }).toList();
 
@@ -256,6 +267,26 @@ class ApiService {
         status: 'present',
         checkInTime: '09:00 AM',
         checkOutTime: '05:00 PM',
+        punches: [
+          PunchLog(
+            logId: 101,
+            punchTime: '${today.toIso8601String().split('T')[0]}T09:00:00Z',
+            formattedTime: '09:00 AM',
+            direction: 'In',
+            deviceName: 'Main Gate Biometric',
+            deviceSn: 'BG-GATE-01',
+            verifyType: 'Fingerprint',
+          ),
+          PunchLog(
+            logId: 102,
+            punchTime: '${today.toIso8601String().split('T')[0]}T17:00:00Z',
+            formattedTime: '05:00 PM',
+            direction: 'Out',
+            deviceName: 'Main Gate Biometric',
+            deviceSn: 'BG-GATE-01',
+            verifyType: 'Fingerprint',
+          ),
+        ],
       ),
       AttendanceRecord(
         id: 2,
@@ -263,6 +294,26 @@ class ApiService {
         status: 'present',
         checkInTime: '08:55 AM',
         checkOutTime: '05:10 PM',
+        punches: [
+          PunchLog(
+            logId: 103,
+            punchTime: '${yesterday.toIso8601String().split('T')[0]}T08:55:00Z',
+            formattedTime: '08:55 AM',
+            direction: 'In',
+            deviceName: 'Kitchen Gate Terminal',
+            deviceSn: 'KG-GATE-02',
+            verifyType: 'Face AI',
+          ),
+          PunchLog(
+            logId: 104,
+            punchTime: '${yesterday.toIso8601String().split('T')[0]}T17:10:00Z',
+            formattedTime: '05:10 PM',
+            direction: 'Out',
+            deviceName: 'Kitchen Gate Terminal',
+            deviceSn: 'KG-GATE-02',
+            verifyType: 'Face AI',
+          ),
+        ],
       ),
       AttendanceRecord(
         id: 3,

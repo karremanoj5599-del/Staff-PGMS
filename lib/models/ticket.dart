@@ -8,6 +8,10 @@ class Ticket {
   final String? adminNotes;
   final int? rating;
   final String? feedback;
+  final String? tenantName;
+  final String? tenantMobile;
+  final String? tenantRoom;
+  final String? tenantBed;
 
   Ticket({
     required this.id,
@@ -19,6 +23,10 @@ class Ticket {
     this.adminNotes,
     this.rating,
     this.feedback,
+    this.tenantName,
+    this.tenantMobile,
+    this.tenantRoom,
+    this.tenantBed,
   });
 
   factory Ticket.fromJson(Map<String, dynamic> json) {
@@ -36,6 +44,10 @@ class Ticket {
       adminNotes: json['admin_notes']?.toString(),
       rating: json['rating'] != null ? int.tryParse(json['rating'].toString()) : null,
       feedback: json['feedback']?.toString(),
+      tenantName: json['tenant_name']?.toString() ?? json['name']?.toString(),
+      tenantMobile: json['tenant_mobile']?.toString() ?? json['mobile']?.toString(),
+      tenantRoom: json['tenant_room']?.toString() ?? json['room_number']?.toString() ?? json['room']?.toString(),
+      tenantBed: json['tenant_bed']?.toString() ?? json['bed_number']?.toString() ?? json['bed']?.toString(),
     );
   }
 
@@ -50,6 +62,10 @@ class Ticket {
       if (adminNotes != null) 'admin_notes': adminNotes,
       if (rating != null) 'rating': rating,
       if (feedback != null) 'feedback': feedback,
+      if (tenantName != null) 'tenant_name': tenantName,
+      if (tenantMobile != null) 'tenant_mobile': tenantMobile,
+      if (tenantRoom != null) 'tenant_room': tenantRoom,
+      if (tenantBed != null) 'tenant_bed': tenantBed,
     };
   }
 
@@ -63,6 +79,10 @@ class Ticket {
     String? adminNotes,
     int? rating,
     String? feedback,
+    String? tenantName,
+    String? tenantMobile,
+    String? tenantRoom,
+    String? tenantBed,
   }) {
     return Ticket(
       id: id ?? this.id,
@@ -74,6 +94,10 @@ class Ticket {
       adminNotes: adminNotes ?? this.adminNotes,
       rating: rating ?? this.rating,
       feedback: feedback ?? this.feedback,
+      tenantName: tenantName ?? this.tenantName,
+      tenantMobile: tenantMobile ?? this.tenantMobile,
+      tenantRoom: tenantRoom ?? this.tenantRoom,
+      tenantBed: tenantBed ?? this.tenantBed,
     );
   }
 }

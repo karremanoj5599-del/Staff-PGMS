@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/ticket.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
@@ -65,6 +67,56 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
           content: Text('Ticket marked as ${newStatus.replaceAll('_', ' ')}'),
         ),
       );
+    }
+  }
+
+  Future<void> _callTenant(String phone) async {
+    final clean = phone.replaceAll(RegExp(r'[^0-9+]'), '');
+    final uri = Uri.parse('tel:$clean');
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        await Clipboard.setData(ClipboardData(text: clean));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Phone copied to clipboard: $clean')),
+          );
+        }
+      }
+    } catch (_) {
+      await Clipboard.setData(ClipboardData(text: clean));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Phone copied to clipboard: $clean')),
+        );
+      }
+    }
+  }
+
+  Future<void> _whatsappTenant(String phone, Ticket ticket) async {
+    var clean = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    if (clean.length == 10) clean = '91$clean';
+    final msg = Uri.encodeComponent(
+      'Hello ${ticket.tenantName ?? "there"}, regarding your maintenance ticket #${ticket.id} (${ticket.issueCategory.toUpperCase()}): "${ticket.description.length > 50 ? "${ticket.description.substring(0, 50)}..." : ticket.description}"',
+    );
+    final uri = Uri.parse('https://wa.me/$clean?text=$msg');
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not open WhatsApp.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('WhatsApp error: $e')),
+        );
+      }
     }
   }
 
@@ -134,6 +186,117 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               ),
             ),
             const SizedBox(height: 20),
+
+            // Tenant Contact Card
+            if (ticket.tenantName != null || ticket.tenantMobile != null || ticket.tenantRoom != null) ...[
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: colors.card,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: colors.cardBorder),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: colors.accent.withAlpha(25),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(Icons.person, color: colors.accent, size: 20),
+                            ),
+                            const SizedBox(width: 10),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  ticket.tenantName ?? 'Tenant',
+                                  style: TextStyle(
+                                    fontSize: 15 * theme.uiScale,
+                                    fontWeight: FontWeight.bold,
+                                    color: colors.text,
+                                  ),
+                                ),
+                                if (ticket.tenantMobile != null && ticket.tenantMobile!.isNotEmpty)
+                                  Text(
+                                    ticket.tenantMobile!,
+                                    style: TextStyle(
+                                      fontSize: 12 * theme.uiScale,
+                                      color: colors.textMuted,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        if (ticket.tenantRoom != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: colors.accent.withAlpha(20),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Room ${ticket.tenantRoom}${ticket.tenantBed != null ? " · Bed ${ticket.tenantBed}" : ""}',
+                              style: TextStyle(
+                                fontSize: 11 * theme.uiScale,
+                                fontWeight: FontWeight.bold,
+                                color: colors.accent,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+
+                    if (ticket.tenantMobile != null && ticket.tenantMobile!.isNotEmpty) ...[
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () => _callTenant(ticket.tenantMobile!),
+                              icon: const Icon(Icons.phone, size: 16),
+                              label: const Text('Call'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: colors.accent,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                elevation: 0,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () => _whatsappTenant(ticket.tenantMobile!, ticket),
+                              icon: const Icon(Icons.chat, size: 16),
+                              label: const Text('WhatsApp'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF25D366),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                elevation: 0,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
             Divider(color: colors.separator),
             const SizedBox(height: 16),
 
