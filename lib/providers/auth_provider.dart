@@ -16,6 +16,7 @@ class AuthProvider extends ChangeNotifier {
   String? get token => _token;
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _user != null;
+  ApiService get apiService => _apiService;
 
   AuthProvider() {
     _loadUser();
@@ -55,7 +56,7 @@ class AuthProvider extends ChangeNotifier {
         return result.error ?? 'Login failed';
       }
     } catch (e) {
-      return 'Failed to connect to the server';
+      return 'CONNECTION_ERROR: Failed to connect to the server ($e)';
     } finally {
       _isLoading = false;
       notifyListeners();

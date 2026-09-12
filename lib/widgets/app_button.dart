@@ -73,7 +73,7 @@ class AppButton extends StatelessWidget {
         ],
         Text(
           text,
-          style: TextStyle(
+          style: (Theme.of(context).textTheme.labelLarge ?? const TextStyle()).copyWith(
             color: fg,
             fontWeight: FontWeight.bold,
             fontSize: 16 * theme.uiScale,
@@ -105,6 +105,10 @@ class AppButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
             side: border ?? BorderSide.none,
+          ),
+          textStyle: (Theme.of(context).textTheme.labelLarge ?? const TextStyle()).copyWith(
+            fontWeight: FontWeight.bold,
+            fontSize: 16 * theme.uiScale,
           ),
         ),
         child: content,

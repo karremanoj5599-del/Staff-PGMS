@@ -1,5 +1,4 @@
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode;
 
 class ApiConfig {
   ApiConfig._();
@@ -11,15 +10,14 @@ class ApiConfig {
       return envUrl.replaceAll(RegExp(r'/staff/?$'), '');
     }
 
+    if (kDebugMode) {
+      return 'http://192.168.1.106:5000/api';
+    }
+
     // Production URL
     return 'https://pgms-nu.vercel.app/api';
   }
 
   /// Local development fallback
-  static String get localBaseUrl {
-    if (!kIsWeb && Platform.isAndroid) {
-      return 'http://10.0.2.2:5000/api';
-    }
-    return 'http://127.0.0.1:5000/api';
-  }
+  static String get localBaseUrl => 'http://192.168.1.106:5000/api';
 }

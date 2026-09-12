@@ -34,6 +34,27 @@ class ApiService {
     return map;
   }
 
+  // ─── HEALTH & CONNECTIVITY ─────────────────────────────────
+  Future<ApiResponse<bool>> checkConnection() async {
+    try {
+      final response = await http
+          .get(Uri.parse('$_baseUrl/health'))
+          .timeout(const Duration(seconds: 4));
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return ApiResponse(success: true, data: true);
+      }
+      return ApiResponse(
+        success: false,
+        error: 'Server returned HTTP ${response.statusCode}',
+      );
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        error: 'Cannot reach server at $_baseUrl ($e)',
+      );
+    }
+  }
+
   // ─── AUTH ──────────────────────────────────────────────────
   Future<ApiResponse<Map<String, dynamic>>> login(String mobile, String password) async {
     try {
@@ -73,7 +94,10 @@ class ApiService {
       }
     } catch (e) {
       debugPrint('Login error: $e');
-      return ApiResponse(success: false, error: 'Failed to connect to the server');
+      return ApiResponse(
+        success: false,
+        error: 'CONNECTION_ERROR: Could not connect to server at $_baseUrl. Please verify the server is running.',
+      );
     }
   }
 

@@ -7,6 +7,8 @@ import '../../providers/theme_provider.dart';
 import '../../services/api_service.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/status_badge.dart';
+import '../../widgets/connection_problem_view.dart';
+import '../../config/api_config.dart';
 
 class TicketListScreen extends StatefulWidget {
   const TicketListScreen({super.key});
@@ -19,6 +21,7 @@ class _TicketListScreenState extends State<TicketListScreen> {
   final ApiService _apiService = ApiService();
   List<Ticket> _tickets = [];
   bool _loading = true;
+  String? _fetchError;
 
   @override
   void initState() {
@@ -27,6 +30,11 @@ class _TicketListScreenState extends State<TicketListScreen> {
   }
 
   Future<void> _fetchTickets() async {
+    setState(() {
+      _loading = _tickets.isEmpty;
+      _fetchError = null;
+    });
+
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final user = auth.user;
     if (user == null) {
@@ -34,12 +42,21 @@ class _TicketListScreenState extends State<TicketListScreen> {
       return;
     }
 
-    final list = await _apiService.getTickets(user.id, user.adminUserId);
-    if (mounted) {
-      setState(() {
-        _tickets = list;
-        _loading = false;
-      });
+    try {
+      final list = await _apiService.getTickets(user.id, user.adminUserId);
+      if (mounted) {
+        setState(() {
+          _tickets = list;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _fetchError = 'Could not load tickets: $e';
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -86,7 +103,14 @@ class _TicketListScreenState extends State<TicketListScreen> {
       ),
       body: _loading
           ? Center(child: CircularProgressIndicator(color: colors.accent))
-          : RefreshIndicator(
+          : _fetchError != null && _tickets.isEmpty
+              ? ConnectionProblemView(
+                  serverUrl: ApiConfig.baseUrl,
+                  errorDetail: _fetchError,
+                  onRetry: _fetchTickets,
+                  isFullScreen: false,
+                )
+              : RefreshIndicator(
               color: colors.accent,
               onRefresh: _fetchTickets,
               child: _tickets.isEmpty

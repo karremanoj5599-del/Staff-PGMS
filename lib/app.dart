@@ -26,32 +26,7 @@ class _StaffAppState extends State<StaffApp> {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context);
 
-    if (!themeProvider.isLoaded || authProvider.isLoading) {
-      return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(
-          backgroundColor: const Color(0xFF0F172A),
-          body: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF3B82F6),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(Icons.apartment, size: 40, color: Colors.white),
-                ),
-                const SizedBox(height: 24),
-                const CircularProgressIndicator(color: Color(0xFF3B82F6)),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
+    final showSplash = !themeProvider.isLoaded || authProvider.isLoading;
 
     return MaterialApp.router(
       title: 'Staff PGMS',
@@ -60,6 +35,32 @@ class _StaffAppState extends State<StaffApp> {
       darkTheme: themeProvider.darkTheme,
       themeMode: themeProvider.themeMode,
       routerConfig: router,
+      builder: (context, child) {
+        if (showSplash) {
+          return Scaffold(
+            backgroundColor: const Color(0xFF0F172A),
+            body: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3B82F6),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(Icons.apartment, size: 40, color: Colors.white),
+                  ),
+                  const SizedBox(height: 24),
+                  const CircularProgressIndicator(color: Color(0xFF3B82F6)),
+                ],
+              ),
+            ),
+          );
+        }
+        return child ?? const SizedBox.shrink();
+      },
     );
   }
 }

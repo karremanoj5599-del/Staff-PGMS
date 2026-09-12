@@ -25,48 +25,33 @@ class AppTheme {
   ];
 
   static TextTheme _buildTextTheme(String fontFamily, TextTheme base, double uiScale) {
-    TextStyle applyFont(TextStyle? style, {double? defaultSize, FontWeight? weight}) {
-      final size = ((style?.fontSize ?? defaultSize ?? 14.0) * uiScale);
-      final fw = weight ?? style?.fontWeight;
-
-      switch (fontFamily) {
-        case 'Roboto':
-          return GoogleFonts.roboto(fontSize: size, fontWeight: fw, letterSpacing: style?.letterSpacing);
-        case 'Poppins':
-          return GoogleFonts.poppins(fontSize: size, fontWeight: fw, letterSpacing: style?.letterSpacing);
-        case 'Open Sans':
-          return GoogleFonts.openSans(fontSize: size, fontWeight: fw, letterSpacing: style?.letterSpacing);
-        case 'Montserrat':
-          return GoogleFonts.montserrat(fontSize: size, fontWeight: fw, letterSpacing: style?.letterSpacing);
-        case 'Lato':
-          return GoogleFonts.lato(fontSize: size, fontWeight: fw, letterSpacing: style?.letterSpacing);
-        case 'Nunito':
-          return GoogleFonts.nunito(fontSize: size, fontWeight: fw, letterSpacing: style?.letterSpacing);
-        case 'Playfair Display':
-        case 'Playfair':
-          return GoogleFonts.playfairDisplay(fontSize: size, fontWeight: fw, letterSpacing: style?.letterSpacing);
-        case 'Inter':
-        default:
-          return GoogleFonts.inter(fontSize: size, fontWeight: fw, letterSpacing: style?.letterSpacing);
-      }
+    TextTheme themedText;
+    try {
+      themedText = GoogleFonts.getTextTheme(fontFamily, base);
+    } catch (_) {
+      themedText = GoogleFonts.interTextTheme(base);
     }
 
-    return TextTheme(
-      displayLarge: applyFont(base.displayLarge, defaultSize: 32, weight: FontWeight.bold),
-      displayMedium: applyFont(base.displayMedium, defaultSize: 28, weight: FontWeight.bold),
-      displaySmall: applyFont(base.displaySmall, defaultSize: 24, weight: FontWeight.bold),
-      headlineLarge: applyFont(base.headlineLarge, defaultSize: 22, weight: FontWeight.w700),
-      headlineMedium: applyFont(base.headlineMedium, defaultSize: 20, weight: FontWeight.w600),
-      headlineSmall: applyFont(base.headlineSmall, defaultSize: 18, weight: FontWeight.w600),
-      titleLarge: applyFont(base.titleLarge, defaultSize: 18, weight: FontWeight.w600),
-      titleMedium: applyFont(base.titleMedium, defaultSize: 16, weight: FontWeight.w600),
-      titleSmall: applyFont(base.titleSmall, defaultSize: 14, weight: FontWeight.w500),
-      bodyLarge: applyFont(base.bodyLarge, defaultSize: 16, weight: FontWeight.normal),
-      bodyMedium: applyFont(base.bodyMedium, defaultSize: 14, weight: FontWeight.normal),
-      bodySmall: applyFont(base.bodySmall, defaultSize: 12, weight: FontWeight.normal),
-      labelLarge: applyFont(base.labelLarge, defaultSize: 14, weight: FontWeight.w600),
-      labelMedium: applyFont(base.labelMedium, defaultSize: 12, weight: FontWeight.w500),
-      labelSmall: applyFont(base.labelSmall, defaultSize: 11, weight: FontWeight.w500),
+    if (uiScale == 1.0) {
+      return themedText;
+    }
+
+    return themedText.copyWith(
+      displayLarge: themedText.displayLarge?.copyWith(fontSize: (themedText.displayLarge?.fontSize ?? 57) * uiScale),
+      displayMedium: themedText.displayMedium?.copyWith(fontSize: (themedText.displayMedium?.fontSize ?? 45) * uiScale),
+      displaySmall: themedText.displaySmall?.copyWith(fontSize: (themedText.displaySmall?.fontSize ?? 36) * uiScale),
+      headlineLarge: themedText.headlineLarge?.copyWith(fontSize: (themedText.headlineLarge?.fontSize ?? 32) * uiScale),
+      headlineMedium: themedText.headlineMedium?.copyWith(fontSize: (themedText.headlineMedium?.fontSize ?? 28) * uiScale),
+      headlineSmall: themedText.headlineSmall?.copyWith(fontSize: (themedText.headlineSmall?.fontSize ?? 24) * uiScale),
+      titleLarge: themedText.titleLarge?.copyWith(fontSize: (themedText.titleLarge?.fontSize ?? 22) * uiScale),
+      titleMedium: themedText.titleMedium?.copyWith(fontSize: (themedText.titleMedium?.fontSize ?? 16) * uiScale),
+      titleSmall: themedText.titleSmall?.copyWith(fontSize: (themedText.titleSmall?.fontSize ?? 14) * uiScale),
+      bodyLarge: themedText.bodyLarge?.copyWith(fontSize: (themedText.bodyLarge?.fontSize ?? 16) * uiScale),
+      bodyMedium: themedText.bodyMedium?.copyWith(fontSize: (themedText.bodyMedium?.fontSize ?? 14) * uiScale),
+      bodySmall: themedText.bodySmall?.copyWith(fontSize: (themedText.bodySmall?.fontSize ?? 12) * uiScale),
+      labelLarge: themedText.labelLarge?.copyWith(fontSize: (themedText.labelLarge?.fontSize ?? 14) * uiScale),
+      labelMedium: themedText.labelMedium?.copyWith(fontSize: (themedText.labelMedium?.fontSize ?? 12) * uiScale),
+      labelSmall: themedText.labelSmall?.copyWith(fontSize: (themedText.labelSmall?.fontSize ?? 11) * uiScale),
     );
   }
 
