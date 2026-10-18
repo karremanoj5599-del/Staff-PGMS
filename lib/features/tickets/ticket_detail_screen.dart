@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -345,14 +347,13 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
             if (ticket.status == 'pending' || ticket.status == 'in_progress') ...[
               AppButton(
-                text: 'Mark Resolved',
+                text: 'Mark Resolved (With Proof)',
                 width: double.infinity,
                 variant: AppButtonVariant.success,
                 isLoading: _updating,
-                onPressed: () => _updateStatus('resolved'),
+                onPressed: () => _showResolveModal(context),
               ),
             ],
-
             if (ticket.status == 'resolved') ...[
               Center(
                 child: Padding(
@@ -373,4 +374,255 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
       ),
     );
   }
+
+  void _showResolveModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _ResolveTicketSheet(
+        ticket: _ticket!,
+        onResolved: (updatedTicket) {
+          setState(() {
+            _ticket = updatedTicket;
+          });
+        },
+      ),
+    );
+  }
 }
+
+class _ResolveTicketSheet extends StatefulWidget {
+  final Ticket ticket;
+  final Function(Ticket) onResolved;
+
+  const _ResolveTicketSheet({
+    required this.ticket,
+    required this.onResolved,
+  });
+
+  @override
+  State<_ResolveTicketSheet> createState() => _ResolveTicketSheetState();
+}
+
+class _ResolveTicketSheetState extends State<_ResolveTicketSheet> {
+  final ApiService _apiService = ApiService();
+  final TextEditingController _sparePartsController = TextEditingController();
+  final TextEditingController _materialCostController = TextEditingController();
+
+  Uint8List? _photoBytes;
+  String? _photoBase64;
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _sparePartsController.dispose();
+    _materialCostController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickPhoto(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 80,
+      );
+      if (picked != null) {
+        final bytes = await picked.readAsBytes();
+        setState(() {
+          _photoBytes = bytes;
+          _photoBase64 = base64Encode(bytes);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to pick image: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _submitResolution() async {
+    setState(() => _submitting = true);
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final user = auth.user;
+
+    final cost = double.tryParse(_materialCostController.text.trim());
+
+    final res = await _apiService.resolveTicketWithProof(
+      ticketId: widget.ticket.id,
+      adminUserId: user?.adminUserId,
+      completionPhotoBase64: _photoBase64,
+      spareParts: _sparePartsController.text.trim(),
+      materialCost: cost,
+    );
+
+    if (mounted) {
+      setState(() => _submitting = false);
+      if (res.success) {
+        final updated = widget.ticket.copyWith(status: 'resolved');
+        widget.onResolved(updated);
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ticket resolved and completion proof recorded!')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(res.error ?? 'Failed to resolve ticket')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Provider.of<ThemeProvider>(context);
+    final colors = theme.resolvedColors(context);
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.card,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Resolve Ticket #${widget.ticket.id}',
+                  style: TextStyle(
+                    fontSize: 18 * theme.uiScale,
+                    fontWeight: FontWeight.bold,
+                    color: colors.text,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
+            Text(
+              'Attach repair completion photo & record spare parts/costs',
+              style: TextStyle(fontSize: 13 * theme.uiScale, color: colors.textMuted),
+            ),
+            const SizedBox(height: 16),
+
+            // Photo Evidence Section
+            Text(
+              'Repair Completion Photo *',
+              style: TextStyle(fontSize: 14 * theme.uiScale, fontWeight: FontWeight.bold, color: colors.text),
+            ),
+            const SizedBox(height: 8),
+
+            if (_photoBytes != null) ...[
+              Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.memory(
+                      _photoBytes!,
+                      width: double.infinity,
+                      height: 160,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: CircleAvatar(
+                      backgroundColor: Colors.black54,
+                      radius: 16,
+                      child: IconButton(
+                        icon: const Icon(Icons.close, size: 16, color: Colors.white),
+                        onPressed: () => setState(() {
+                          _photoBytes = null;
+                          _photoBase64 = null;
+                        }),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ] else ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _pickPhoto(ImageSource.camera),
+                      icon: const Icon(Icons.camera_alt),
+                      label: const Text('Take Photo'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _pickPhoto(ImageSource.gallery),
+                      icon: const Icon(Icons.photo_library),
+                      label: const Text('From Gallery'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            // Spare Parts Used Field
+            TextField(
+              controller: _sparePartsController,
+              decoration: InputDecoration(
+                labelText: 'Spare Parts Used (Optional)',
+                hintText: 'e.g. Replaced 0.5-inch PVC ball valve',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                prefixIcon: const Icon(Icons.build_circle_outlined),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Material Cost Field
+            TextField(
+              controller: _materialCostController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                labelText: 'Material Expense ₹ (Optional)',
+                hintText: 'e.g. 250',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                prefixIcon: const Icon(Icons.currency_rupee),
+                helperText: 'Auto-logs as Maintenance Expense in accounts',
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            AppButton(
+              text: 'Confirm Resolution',
+              width: double.infinity,
+              variant: AppButtonVariant.success,
+              isLoading: _submitting,
+              onPressed: _submitResolution,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

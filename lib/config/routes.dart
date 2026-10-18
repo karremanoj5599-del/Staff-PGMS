@@ -7,6 +7,8 @@ import '../features/attendance/attendance_screen.dart';
 import '../features/leaves/leaves_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/scan/scan_screen.dart';
+import '../features/mess/kitchen_mess_screen.dart';
+import '../features/housekeeping/housekeeping_screen.dart';
 import '../features/shell/staff_shell_screen.dart';
 import '../providers/auth_provider.dart';
 
@@ -55,6 +57,16 @@ GoRouter createRouter(AuthProvider authProvider) {
         path: '/scan',
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const ScanScreen(),
+      ),
+      GoRoute(
+        path: '/kitchen-mess',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const KitchenMessScreen(),
+      ),
+      GoRoute(
+        path: '/housekeeping',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const HousekeepingScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

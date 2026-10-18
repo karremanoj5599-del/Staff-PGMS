@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../../models/staff_roster.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/api_service.dart';
@@ -18,6 +20,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final ApiService _apiService = ApiService();
   bool _isAvailable = false;
   String _tradeType = 'unassigned';
+  StaffRoster? _roster;
   bool _loading = true;
   bool _updating = false;
 
@@ -32,10 +35,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = auth.user;
     if (user != null) {
       final profile = await _apiService.getStaffProfile(user.id, user.adminUserId);
+      final roster = await _apiService.getStaffRoster(user.id, user.adminUserId);
       if (mounted) {
         setState(() {
           _isAvailable = profile?['is_available'] ?? true;
           _tradeType = profile?['trade_type'] ?? 'unassigned';
+          _roster = roster;
           _loading = false;
         });
       }
@@ -244,7 +249,185 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 12),
             Divider(color: colors.separator),
+            const SizedBox(height: 20),
+
+            // Field Operations Launcher Cards
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Field Operations Modules',
+                style: TextStyle(
+                  fontSize: 16 * theme.uiScale,
+                  fontWeight: FontWeight.bold,
+                  color: colors.text,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () => context.push('/scan'),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: colors.card,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: colors.separator),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(Icons.qr_code_scanner, color: colors.accent, size: 28),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Gate Passes',
+                            style: TextStyle(fontSize: 12 * theme.uiScale, fontWeight: FontWeight.bold, color: colors.text),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: InkWell(
+                    onTap: () => context.push('/kitchen-mess'),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: colors.card,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: colors.separator),
+                      ),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.restaurant, color: Colors.teal, size: 28),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Kitchen Mess',
+                            style: TextStyle(fontSize: 12 * theme.uiScale, fontWeight: FontWeight.bold, color: colors.text),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: InkWell(
+                    onTap: () => context.push('/housekeeping'),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: colors.card,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: colors.separator),
+                      ),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.cleaning_services, color: Colors.blue, size: 28),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Housekeeping',
+                            style: TextStyle(fontSize: 12 * theme.uiScale, fontWeight: FontWeight.bold, color: colors.text),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 24),
+
+            // Weekly Shift Roster & Off-Day Card
+            if (_roster != null) ...[
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Assigned Shift Roster',
+                  style: TextStyle(
+                    fontSize: 16 * theme.uiScale,
+                    fontWeight: FontWeight.bold,
+                    color: colors.text,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: colors.card,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: colors.separator),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.access_time_filled, color: Colors.blue, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Shift: ${_roster!.shiftStartTime.substring(0, 5)} - ${_roster!.shiftEndTime.substring(0, 5)}',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15 * theme.uiScale, color: colors.text),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withAlpha(25),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Off: ${_roster!.weeklyOffDay}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.amber),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Grace Time: ${_roster!.shiftGraceMinutes} minutes for late check-in allowance',
+                      style: TextStyle(fontSize: 12 * theme.uiScale, color: colors.textMuted),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: _roster!.shifts.map((s) {
+                        final isOff = s.status == 'Weekly Off';
+                        return Chip(
+                          label: Text('${s.day.substring(0, 3)}: ${isOff ? "Off" : "Work"}'),
+                          backgroundColor: isOff ? Colors.amber.withAlpha(30) : Colors.green.withAlpha(30),
+                          labelStyle: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: isOff ? Colors.amber.shade800 : Colors.green.shade800,
+                          ),
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+
 
             // Theme Settings Button
             AppButton(

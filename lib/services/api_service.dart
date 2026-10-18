@@ -6,6 +6,10 @@ import '../models/user.dart';
 import '../models/ticket.dart';
 import '../models/attendance.dart';
 import '../models/leave.dart';
+import '../models/active_visitor.dart';
+import '../models/mess_forecast.dart';
+import '../models/housekeeping_task.dart';
+import '../models/staff_roster.dart';
 
 class ApiResponse<T> {
   final bool success;
@@ -20,6 +24,12 @@ class ApiService {
 
   ApiService({String? baseUrl}) : _baseUrl = baseUrl ?? ApiConfig.baseUrl;
 
+  static String? _authToken;
+
+  void setAuthToken(String? token) {
+    _authToken = token;
+  }
+
   Map<String, String> _headers({String? adminUserId, String? token, String? userId}) {
     final map = <String, String>{
       'Content-Type': 'application/json',
@@ -28,8 +38,9 @@ class ApiService {
     if (resolvedId != null && resolvedId.isNotEmpty) {
       map['x-user-id'] = resolvedId;
     }
-    if (token != null && token.isNotEmpty) {
-      map['Authorization'] = 'Bearer $token';
+    final effectiveToken = token ?? _authToken;
+    if (effectiveToken != null && effectiveToken.isNotEmpty) {
+      map['Authorization'] = 'Bearer $effectiveToken';
     }
     return map;
   }
@@ -117,32 +128,14 @@ class ApiService {
       debugPrint('Fetch tickets error: $e');
     }
 
-    // Mock fallback matching existing Expo app
-    return [
-      Ticket(
-        id: 1,
-        tenantId: 101,
-        issueCategory: 'plumbing',
-        description: 'Leaking pipe under sink',
-        status: 'pending',
-        createdAt: '2026-07-10T10:00:00Z',
-      ),
-      Ticket(
-        id: 2,
-        tenantId: 102,
-        issueCategory: 'electrical',
-        description: 'Lights not working in living room',
-        status: 'in_progress',
-        createdAt: '2026-07-11T14:30:00Z',
-      ),
-    ];
+    return [];
   }
 
   Future<Ticket?> getTicketDetails(int ticketId, int? adminUserId) async {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/admin/tickets/$ticketId'),
-        headers: {'Authorization': 'Bearer ${adminUserId ?? ''}'},
+        headers: _headers(adminUserId: adminUserId?.toString()),
       );
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -152,32 +145,21 @@ class ApiService {
       debugPrint('Fetch ticket details error: $e');
     }
 
-    // Mock fallback
-    return Ticket(
-      id: ticketId,
-      tenantId: 101,
-      issueCategory: 'plumbing',
-      description: 'Leaking pipe under sink. Needs urgent attention as water is spilling everywhere.',
-      status: 'pending',
-      createdAt: '2026-07-10T10:00:00Z',
-    );
+    return null;
   }
 
   Future<bool> updateTicketStatus(int ticketId, String newStatus, int? adminUserId) async {
     try {
       final response = await http.put(
         Uri.parse('$_baseUrl/admin/tickets/$ticketId'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${adminUserId ?? ''}',
-        },
+        headers: _headers(adminUserId: adminUserId?.toString()),
         body: jsonEncode({'status': newStatus}),
       );
 
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (e) {
       debugPrint('Update ticket status error: $e');
-      return true; // Mock fallback
+      return false;
     }
   }
 
@@ -257,70 +239,7 @@ class ApiService {
       debugPrint('Fetch attendance error: $e');
     }
 
-    // Mock fallback
-    final today = DateTime.now();
-    final yesterday = today.subtract(const Duration(days: 1));
-    return [
-      AttendanceRecord(
-        id: 1,
-        date: today.toIso8601String().split('T')[0],
-        status: 'present',
-        checkInTime: '09:00 AM',
-        checkOutTime: '05:00 PM',
-        punches: [
-          PunchLog(
-            logId: 101,
-            punchTime: '${today.toIso8601String().split('T')[0]}T09:00:00Z',
-            formattedTime: '09:00 AM',
-            direction: 'In',
-            deviceName: 'Main Gate Biometric',
-            deviceSn: 'BG-GATE-01',
-            verifyType: 'Fingerprint',
-          ),
-          PunchLog(
-            logId: 102,
-            punchTime: '${today.toIso8601String().split('T')[0]}T17:00:00Z',
-            formattedTime: '05:00 PM',
-            direction: 'Out',
-            deviceName: 'Main Gate Biometric',
-            deviceSn: 'BG-GATE-01',
-            verifyType: 'Fingerprint',
-          ),
-        ],
-      ),
-      AttendanceRecord(
-        id: 2,
-        date: yesterday.toIso8601String().split('T')[0],
-        status: 'present',
-        checkInTime: '08:55 AM',
-        checkOutTime: '05:10 PM',
-        punches: [
-          PunchLog(
-            logId: 103,
-            punchTime: '${yesterday.toIso8601String().split('T')[0]}T08:55:00Z',
-            formattedTime: '08:55 AM',
-            direction: 'In',
-            deviceName: 'Kitchen Gate Terminal',
-            deviceSn: 'KG-GATE-02',
-            verifyType: 'Face AI',
-          ),
-          PunchLog(
-            logId: 104,
-            punchTime: '${yesterday.toIso8601String().split('T')[0]}T17:10:00Z',
-            formattedTime: '05:10 PM',
-            direction: 'Out',
-            deviceName: 'Kitchen Gate Terminal',
-            deviceSn: 'KG-GATE-02',
-            verifyType: 'Face AI',
-          ),
-        ],
-      ),
-      AttendanceRecord(
-        id: 3,
-        date: '2026-07-10',
-        status: 'leave',
-      ),
-    ];
+    return [];
   }
 
   Future<bool> clockIn(int staffId, int? adminUserId) async {
@@ -485,4 +404,309 @@ class ApiService {
       return {'success': false, 'error': 'Failed to connect to the server'};
     }
   }
+
+  // ─── GEOFENCE & CLOCK-IN ────────────────────────────────────
+  Future<Map<String, dynamic>?> getPropertyGeofence(int staffId, int? adminUserId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/staff/$staffId/geofence'),
+        headers: _headers(adminUserId: adminUserId?.toString()),
+      );
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      debugPrint('Get geofence error: $e');
+    }
+    return null;
+  }
+
+  Future<ApiResponse<bool>> clockInWithLocationOrQr({
+    required int staffId,
+    int? adminUserId,
+    double? latitude,
+    double? longitude,
+    String? qrCode,
+  }) async {
+    try {
+      final payload = <String, dynamic>{};
+        if (latitude != null) payload['latitude'] = latitude;
+        if (longitude != null) payload['longitude'] = longitude;
+        if (qrCode != null) payload['qr_code'] = qrCode;
+
+        final response = await http.post(
+          Uri.parse('$_baseUrl/staff/$staffId/attendance/clock-in'),
+          headers: _headers(adminUserId: adminUserId?.toString()),
+          body: jsonEncode(payload),
+        );
+
+      final body = jsonDecode(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return ApiResponse(success: true, data: true);
+      }
+      return ApiResponse(
+        success: false,
+        error: body['error'] ?? body['message'] ?? 'Failed to clock in',
+      );
+    } catch (e) {
+      return ApiResponse(success: false, error: e.toString());
+    }
+  }
+
+  // ─── TICKET RESOLUTION WITH PROOF ──────────────────────────
+  Future<ApiResponse<bool>> resolveTicketWithProof({
+    required int ticketId,
+    int? adminUserId,
+    String? completionPhotoBase64,
+    String? spareParts,
+    double? materialCost,
+  }) async {
+    try {
+      final payload = <String, dynamic>{};
+      if (completionPhotoBase64 != null) payload['completion_photo'] = completionPhotoBase64;
+      if (spareParts != null && spareParts.isNotEmpty) payload['spare_parts'] = spareParts;
+      if (materialCost != null && materialCost > 0) payload['material_cost'] = materialCost;
+
+      final response = await http.post(
+        Uri.parse('$_baseUrl/staff/tickets/$ticketId/resolve'),
+        headers: _headers(adminUserId: adminUserId?.toString()),
+        body: jsonEncode(payload),
+      );
+
+      final body = jsonDecode(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return ApiResponse(success: true, data: true);
+      }
+      return ApiResponse(
+        success: false,
+        error: body['error'] ?? 'Failed to resolve ticket',
+      );
+    } catch (e) {
+      return ApiResponse(success: false, error: e.toString());
+    }
+  }
+
+  // ─── DELIVERY FAST-PASS & WALK-IN ─────────────────────────
+  Future<ApiResponse<Map<String, dynamic>>> issueDeliveryPass({
+    required String deliveryPartner,
+    required String roomNumber,
+    int? packageCount,
+    required String staffName,
+    int? adminUserId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/staff/visitors/delivery-pass'),
+        headers: _headers(adminUserId: adminUserId?.toString()),
+        body: jsonEncode({
+          'delivery_partner': deliveryPartner,
+          'room_number': roomNumber,
+          'package_count': packageCount ?? 1,
+          'staff_name': staffName,
+        }),
+      );
+
+      final body = jsonDecode(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return ApiResponse(success: true, data: body);
+      }
+      return ApiResponse(
+        success: false,
+        error: body['error'] ?? 'Failed to issue delivery pass',
+      );
+    } catch (e) {
+      return ApiResponse(success: false, error: e.toString());
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> registerWalkInVisitor({
+    required String name,
+    required String phone,
+    String? purpose,
+    String? roomNumber,
+    required String staffName,
+    int? adminUserId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/staff/visitors/walk-in'),
+        headers: _headers(adminUserId: adminUserId?.toString()),
+        body: jsonEncode({
+          'name': name,
+          'phone': phone,
+          'purpose': purpose,
+          'room_number': roomNumber,
+          'staff_name': staffName,
+        }),
+      );
+
+      final body = jsonDecode(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return ApiResponse(success: true, data: body);
+      }
+      return ApiResponse(
+        success: false,
+        error: body['error'] ?? 'Failed to register walk-in visitor',
+      );
+    } catch (e) {
+      return ApiResponse(success: false, error: e.toString());
+    }
+  }
+
+  Future<List<ActiveVisitor>> getActiveVisitors(int? adminUserId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/staff/visitors/active'),
+        headers: _headers(adminUserId: adminUserId?.toString()),
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final List list = jsonDecode(response.body);
+        return list.map((e) => ActiveVisitor.fromJson(e as Map<String, dynamic>)).toList();
+      }
+    } catch (e) {
+      debugPrint('Get active visitors error: $e');
+    }
+    return [];
+  }
+
+  Future<bool> markVisitorExit(int visitorId, String staffName, int? adminUserId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/staff/visitors/$visitorId/mark-exit'),
+        headers: _headers(adminUserId: adminUserId?.toString()),
+        body: jsonEncode({'staff_name': staffName}),
+      );
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (e) {
+      debugPrint('Mark visitor exit error: $e');
+      return false;
+    }
+  }
+
+  // ─── MESS FORECAST & DINING PASS ───────────────────────────
+  Future<MessForecast?> getMessForecast(int? adminUserId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/staff/mess/forecast'),
+        headers: _headers(adminUserId: adminUserId?.toString()),
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return MessForecast.fromJson(jsonDecode(response.body));
+      }
+    } catch (e) {
+      debugPrint('Get mess forecast error: $e');
+    }
+    return null;
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> scanMessDiningPass(
+    String qrData,
+    String staffName,
+    int? adminUserId,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/staff/mess/scan'),
+        headers: _headers(adminUserId: adminUserId?.toString()),
+        body: jsonEncode({'qr_data': qrData, 'staff_name': staffName}),
+      );
+
+      final body = jsonDecode(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return ApiResponse(success: true, data: body);
+      }
+      return ApiResponse(
+        success: false,
+        error: body['error'] ?? 'Meal verification failed',
+      );
+    } catch (e) {
+      return ApiResponse(success: false, error: e.toString());
+    }
+  }
+
+  // ─── HOUSEKEEPING CHECKLIST ────────────────────────────────
+  Future<List<HousekeepingTask>> getHousekeepingChecklist(int? adminUserId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/staff/housekeeping/today'),
+        headers: _headers(adminUserId: adminUserId?.toString()),
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final List list = jsonDecode(response.body);
+        return list.map((e) => HousekeepingTask.fromJson(e as Map<String, dynamic>)).toList();
+      }
+    } catch (e) {
+      debugPrint('Get housekeeping checklist error: $e');
+    }
+    return [];
+  }
+
+  Future<bool> checkHousekeepingArea(
+    int taskId,
+    String cleanerName,
+    String? notes,
+    int? adminUserId,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/staff/housekeeping/check'),
+        headers: _headers(adminUserId: adminUserId?.toString()),
+        body: jsonEncode({
+          'task_id': taskId,
+          'cleaner_name': cleanerName,
+          'notes': notes,
+        }),
+      );
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (e) {
+      debugPrint('Check housekeeping error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> signOffHousekeeping(
+    int taskId,
+    String inspectorName,
+    int rating,
+    String? notes,
+    int? adminUserId,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/staff/housekeeping/sign-off'),
+        headers: _headers(adminUserId: adminUserId?.toString()),
+        body: jsonEncode({
+          'task_id': taskId,
+          'inspector_name': inspectorName,
+          'rating': rating,
+          'notes': notes,
+        }),
+      );
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (e) {
+      debugPrint('Sign off housekeeping error: $e');
+      return false;
+    }
+  }
+
+  // ─── ROSTER ────────────────────────────────────────────────
+  Future<StaffRoster?> getStaffRoster(int staffId, int? adminUserId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/staff/$staffId/roster'),
+        headers: _headers(adminUserId: adminUserId?.toString()),
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return StaffRoster.fromJson(jsonDecode(response.body));
+      }
+    } catch (e) {
+      debugPrint('Get staff roster error: $e');
+    }
+    return null;
+  }
 }
+

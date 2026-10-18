@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user.dart';
+import '../services/api_client.dart';
 import '../services/api_service.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -19,6 +20,9 @@ class AuthProvider extends ChangeNotifier {
   ApiService get apiService => _apiService;
 
   AuthProvider() {
+    ApiClient().setOnUnauthorized(() {
+      logout();
+    });
     _loadUser();
   }
 
@@ -30,6 +34,8 @@ class AuthProvider extends ChangeNotifier {
       if (storedUser != null && storedUser.isNotEmpty) {
         _user = User.fromJson(jsonDecode(storedUser));
         _token = storedToken;
+        ApiClient().setAuth(token: storedToken, adminUserId: _user?.adminUserId?.toString());
+        _apiService.setAuthToken(storedToken);
       }
     } catch (e) {
       debugPrint('Failed to load user: $e');
@@ -66,6 +72,8 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _saveAuthData(User userData, String token) async {
     _user = userData;
     _token = token;
+    ApiClient().setAuth(token: token, adminUserId: userData.adminUserId?.toString());
+    _apiService.setAuthToken(token);
     try {
       await _storage.write(key: 'user', value: jsonEncode(userData.toJson()));
       await _storage.write(key: 'token', value: token);
@@ -78,6 +86,8 @@ class AuthProvider extends ChangeNotifier {
   Future<void> logout() async {
     _user = null;
     _token = null;
+    ApiClient().clearAuth();
+    _apiService.setAuthToken(null);
     try {
       await _storage.delete(key: 'user');
       await _storage.delete(key: 'token');
